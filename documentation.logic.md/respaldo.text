@@ -1,0 +1,178 @@
+// database.php:
+conexión a la base de datos
+
+$host = '127.0.0.1';
+$user = 'root';
+$password = '';
+$db = 'mc_barberdb';
+$port = 3306;
+Credenciales de conexión a MySQL
+
+mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
+Configura mysqli para que lance excepciones (mysqli_sql_exception)
+en vez de simplemente devolver false o warnings silenciosos ante un error.
+Esta línea es la que habilita que el try/catch de abajo funcione — sin ella, un error de conexión no lanzaría excepción y el catch nunca se ejecutaría.
+
+try {
+    $conn = new mysqli($host, $user, $password, $db, $port);
+} catch (mysqli_sql_exception $e) {
+    die('Error de Conexion: ' . $e->getMessage());
+}
+Intenta crear la conexión con los 5 parámetros definidos arriba. Si falla (credenciales incorrectas
+servidor caído, BD inexistente, etc.), captura la excepción y detiene la ejecución (die()) mostrando el mensaje de error.
+
+$conn es la variable que todos los modelos (como Usuario.php) deben usar para hacer consultas ($conn->prepare(...), $conn->query(...), etc.).
+Si cambia el nombre de la variable $conn, hay que actualizarla en todos los modelos que dependan de esta conexión
+
+
+-----------------------------------------------------------------------------------------------
+Registro:
+
+// registerController.php:
+Es el controlador de registro de usuarios. Recibe los datos del formulario de registro (register.php), los valida, y crea un nuevo usuario en la base de datos con rol de Cliente.
+
+session_start();
+require_once __DIR__ . '/../../models/Usuario.php';
+Inicia sesión (para $_SESSION['swal']) y carga la clase Usuario. Sin esto, todo lo demás falla.
+
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    header('Location: ../../views/auth/register.php');
+    exit();
+}
+Bloquea acceso directo por navegador (GET).
+
+$nombre   = trim($_POST['nombre']   ?? '');
+$email    = trim($_POST['email']    ?? '');
+$password = $_POST['password']      ?? '';
+$confirm  = $_POST['confirm_password'] ?? '';
+$telefono = trim($_POST['telefono'] ?? '');
+$terminos = isset($_POST['terms']);
+Recoge los datos del formulario. $terminos usa isset() porque un checkbox no marcado no se envía en $_POST.
+
+if (empty($nombre) || empty($email) || empty($password) || empty($telefono)) { ... }
+Valida que ningún campo obligatorio esté vacío.
+
+if ($password !== $confirm) { ... }
+Compara contraseña y confirmación (comparación estricta).
+
+if (!$terminos) { ... }
+Exige que el usuario haya aceptado los términos.
+
+if (!filter_var($email, FILTER_VALIDATE_EMAIL)) { ... }
+Valida el formato del email con función nativa de PHP.
+
+$usuarioModel = new Usuario();
+if ($usuarioModel->emailExiste($email)) { ... }
+Instancia el modelo y verifica que el email no esté duplicado en la BD.
+
+$registrado = $usuarioModel->registrar($nombre, $email, $password, $telefono, 3);
+crea el usuario. El 3 es el id_rol fijo (Cliente).
+
+if ($registrado) {
+    $_SESSION['swal'] = [..., 'redirect' => 'login.php'];
+} else {
+    $_SESSION['swal'] = [...];
+}
+header('Location: ../../views/auth/register.php');
+exit();
+Guarda el mensaje de resultado y redirige. Solo el caso de éxito lleva 'redirect' => 'login.php'.
+-----------------------------------------------------------------------------------------------------------
+
+// usuario.php:
+
+require_once __DIR__ . '/../config/database.php';
+Carga el archivo de conexión a la BD (donde se crea $conn).
+aquí la ruta apunta a database.php
+
+private $conn;
+
+public function __construct() {
+    global $conn;
+    $this->conn = $conn;
+}
+
+public function emailExiste(string $email): bool {
+    $stmt = $this->conn->prepare(
+        "SELECT id_usuario FROM usuarios WHERE email = ? LIMIT 1"
+    );
+    $stmt->bind_param('s', $email);
+    $stmt->execute();
+    $stmt->store_result();
+    $existe = $stmt->num_rows > 0;
+    $stmt->close();
+    return $existe;
+}
+Devuelve true/false según si encontró filas. Usado en el controlador de registro para evitar emails duplicados.
+
+public function buscarPorEmail(string $email): ?array {
+    $stmt = $this->conn->prepare(
+        "SELECT u.id_usuario, u.nombre, u.email, u.password, u.estado, u.id_rol, r.nombre AS rol
+        FROM usuarios u
+        INNER JOIN roles r ON u.id_rol = r.id_rol
+        WHERE u.email = ?
+        LIMIT 1"
+    );
+    $stmt->bind_param('s', $email);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $usuario = $result->fetch_assoc();
+    $stmt->close();
+    return $usuario ?: null;
+}
+Este método es el que usará el login (authControllers.php) para traer los datos del usuario por email, incluyendo el password hasheado (para comparar con password_verify())
+el nombre del rol vía JOIN con la tabla roles.
+
+
+--------------------------------------------------------------------------------------------------
+Login:
+
+authControllers.php:
+
+session_start();
+require_once __DIR__ . '/../../models/Usuario.php';
+carga del modelo Usuario.
+
+$email    = trim($_POST['email']    ?? '');
+$password = $_POST['password']      ?? '';
+Recolección de datos
+
+if (empty($email) || empty($password)) { ...Swal.fire(error)... }
+if (!filter_var($email, FILTER_VALIDATE_EMAIL)) { ...Swal.fire(error)... }
+Cada validación fallida imprime un <script> con Swal.fire() y redirige por JS con .then().
+
+$usuarioModel = new Usuario();
+$usuario = $usuarioModel->buscarPorEmail($email);
+
+if (!$usuario || !password_verify($password, $usuario['password'])) { ...error... }
+Búsqueda y verificación del usuario
+
+if ($usuario['estado'] !== 'ACTIVO') {
+    $mensajeEstado = match($usuario['estado']) {
+        'INACTIVO'   => '...',
+        'SUSPENDIDO' => '...',
+        default      => '...',
+    };
+    ...Swal.fire(warning)...
+}
+Verificación de estado de cuenta
+
+$_SESSION['usuario_id']     = $usuario['id_usuario'];
+$_SESSION['usuario_nombre'] = $usuario['nombre'];
+$_SESSION['usuario_email']  = $usuario['email'];
+$_SESSION['usuario_rol']    = $usuario['rol'];
+$_SESSION['usuario_id_rol'] = $usuario['id_rol'];
+Guardado de sesión (login exitoso)
+Estas 5 líneas son el núcleo funcional del login: guardan en $_SESSION
+los datos que el resto del sistema usará para saber quién está logueado y con qué permisos (rol).
+
+$usuarioModel->actualizarUltimoAcceso($usuario['id_usuario']);
+Actualizar último acceso
+Llama al método visto en Usuario.php que hace UPDATE ... SET ultimo_acceso = NOW().
+
+$redireccion = match((int)$usuario['id_rol']) {
+    1 => '../../views/admin/dashboard.php',
+    2 => '../../views/barbero/dashboard.php',
+    3 => '../../views/cliente/dashboard.php',
+    default => '../../views/auth/login.php',
+};
+Redirección según rol
