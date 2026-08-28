@@ -8,6 +8,10 @@ $nombre_usuario = $_SESSION['usuario_nombre'] ?? 'Admin';
 $iniciales      = mb_strtoupper(mb_substr($nombre_usuario, 0, 2));
 $pagina_actual  = basename($_SERVER['PHP_SELF']);
 $base_path      = $base_path ?? (defined('PROFUNDIDAD') ? PROFUNDIDAD : '../../');
+global $globalConfig;
+$nombre_negocio = $globalConfig['nombre_negocio'] ?? 'MC BARBER';
+$logo_url = $globalConfig['logo_url'] ?? 'public/img/logo_corona.jpg';
+$logo_src = str_starts_with($logo_url, 'http') ? $logo_url : $base_path . $logo_url;
 ?>
 
 
@@ -17,9 +21,9 @@ $base_path      = $base_path ?? (defined('PROFUNDIDAD') ? PROFUNDIDAD : '../../'
 <aside class="sidebar" id="sidebar">
     <!-- Brand -->
     <div class="sidebar-brand">
-        <img src="<?= $base_path ?>public/img/logo_corona.jpg" alt="MC Barber">
+        <img src="<?= htmlspecialchars($logo_src) ?>" alt="<?= htmlspecialchars($nombre_negocio) ?>">
         <div class="sidebar-brand-text">
-            <span class="sidebar-brand-name">MC BARBER</span>
+            <span class="sidebar-brand-name"><?= htmlspecialchars($nombre_negocio) ?></span>
             <span class="sidebar-brand-sub">Administrador</span>
         </div>
 
@@ -43,6 +47,12 @@ $base_path      = $base_path ?? (defined('PROFUNDIDAD') ? PROFUNDIDAD : '../../'
             <span>Usuarios</span>
         </a>
 
+        <a href="<?= $base_path ?>views/admin/barberos.php"
+        class="nav-item <?= $pagina_actual === 'barberos.php' ? 'active' : '' ?>">
+            <i class="bi bi-scissors"></i>
+            <span>Barberos</span>
+        </a>
+
         <a href="<?= $base_path ?>views/admin/citas.php"
         class="nav-item <?= $pagina_actual === 'citas.php' ? 'active' : '' ?>">
             <i class="bi bi-calendar-check-fill"></i>
@@ -51,7 +61,7 @@ $base_path      = $base_path ?? (defined('PROFUNDIDAD') ? PROFUNDIDAD : '../../'
 
         <a href="<?= $base_path ?>views/admin/servicios.php"
         class="nav-item <?= $pagina_actual === 'servicios.php' ? 'active' : '' ?>">
-            <i class="bi bi-scissors"></i>
+            <i class="bi bi-tags-fill"></i>
             <span>Servicios</span>
         </a>
 

@@ -5,6 +5,7 @@
  */
 require_once __DIR__ . '/../../config/database.php';
 require_once __DIR__ . '/../../includes/auditoria_helper.php';
+require_once __DIR__ . '/../../models/Cita.php';
 
 class CitasAdminController {
 
@@ -16,10 +17,10 @@ class CitasAdminController {
 
     /** Lista citas con filtros opcionales */
     public function listar(string $estado = '', string $fecha_desde = '', string $fecha_hasta = '', int $id_barbero = 0): array {
-        $sql = "SELECT c.id_cita, c.fecha, c.hora, c.estado, c.notas,
-                       uc.nombre AS cliente, uc.email AS email_cliente, uc.telefono AS tel_cliente,
-                       ub.nombre AS barbero,
-                       s.nombre  AS servicio, s.precio, s.duracion_minutos
+        $sql = "SELECT c.id_cita, c.fecha, c.hora, c.estado,
+                    uc.nombre AS cliente, uc.email AS email_cliente, uc.telefono AS tel_cliente, uc.foto_perfil AS foto_cliente,
+                    ub.nombre AS barbero,
+                    s.nombre  AS servicio, s.precio, s.duracion_min AS duracion_minutos
                 FROM citas c
                 INNER JOIN usuarios uc ON c.id_cliente  = uc.id_usuario
                 INNER JOIN usuarios ub ON c.id_barbero  = ub.id_usuario
@@ -94,5 +95,36 @@ class CitasAdminController {
         }
         $stats['total'] = array_sum($stats);
         return $stats;
+    }
+
+    /** Lista todos los clientes activos (para filtro select) */
+    public function getClientes(): array {
+        $stmt = $this->conn->prepare(
+            "SELECT id_usuario, nombre, telefono FROM usuarios WHERE id_rol = 3 AND estado = 'ACTIVO' ORDER BY nombre"
+        );
+        $stmt->execute();
+        return $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+    }
+
+    /** Lista todos los servicios activos (para filtro select) */
+    public function getServicios(): array {
+        $stmt = $this->conn->prepare(
+            "SELECT id_servicio, nombre, precio, duracion_min AS duracion_minutos FROM servicios WHERE estado = 'ACTIVO' ORDER BY nombre"
+        );
+        $stmt->execute();
+        return $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+    }
+
+    /** Crea una cita usando el modelo de negocio */
+    public function crearCita(int $id_cliente, int $id_barbero, int $id_servicio, string $fecha, string $hora): array {
+        $citaModel = new Cita();
+        $resultado = $citaModel->crear($id_cliente, $id_barbero, $id_servicio, $fecha, $hora);
+        
+        if ($resultado['ok']) {
+            registrarAuditoria($this->conn, $_SESSION['usuario_id'], "ADMIN_CREO_CITA: Cliente=$id_cliente, Barbero=$id_barbero, Fecha=$fecha $hora", "EXITOSO");
+            return ['ok' => true, 'msg' => 'Cita creada exitosamente.'];
+        } else {
+            return ['ok' => false, 'msg' => $resultado['mensaje'] ?? 'Error al crear la cita.'];
+        }
     }
 }

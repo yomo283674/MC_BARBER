@@ -9,11 +9,16 @@ require_once __DIR__ . '/../config/database.php';
 class Cita {
 
     private $conn;
-    const VENTANA_SEGUNDOS = 180; // 3 minutos — NO modificar
+    private $config;
 
     public function __construct() {
-        global $conn;
+        global $conn, $globalConfig;
         $this->conn = $conn;
+        $this->config = $globalConfig ?? [
+            'tiempo_cancelacion_min' => 10,
+            'tiempo_reprogramacion_min' => 10,
+            'duracion_cita_min' => 30
+        ];
     }
 
     // CREAR
@@ -158,9 +163,15 @@ class Cita {
             return ['ok' => false, 'mensaje' => 'Esta cita no puede ser cancelada.'];
         }
 
-        // Validar ventana de 3 minutos (BACKEND — no depende del frontend)
-        if (!$this->dentroDeVentana($cita['fecha_creacion'])) {
-            return ['ok' => false, 'mensaje' => 'El tiempo para cancelar esta cita ha expirado (3 minutos).'];
+        // Validar tiempo antes de la cita (configuracion global)
+        $cita_datetime = new DateTime($cita['fecha'] . ' ' . $cita['hora']);
+        $ahora = new DateTime();
+        $min_cancelacion = (int)($this->config['tiempo_cancelacion_min'] ?? 10);
+        $limite = clone $cita_datetime;
+        $limite->modify("-{$min_cancelacion} minutes");
+
+        if ($ahora > $limite) {
+            return ['ok' => false, 'mensaje' => "El tiempo para cancelar esta cita ha expirado (mínimo {$min_cancelacion} minutos antes)."];
         }
 
         $stmt = $this->conn->prepare(
@@ -225,8 +236,9 @@ class Cita {
             return ['ok' => false, 'mensaje' => 'El nuevo horario no está disponible.'];
         }
 
-        // Calcular fecha limite de respuesta del cliente (3 minutos)
-        $fecha_limite = date('Y-m-d H:i:s', strtotime('+' . self::VENTANA_SEGUNDOS . ' seconds'));
+        // Calcular fecha limite de respuesta del cliente
+        $minutos_repr = (int)($this->config['tiempo_reprogramacion_min'] ?? 10);
+        $fecha_limite = date('Y-m-d H:i:s', strtotime('+' . $minutos_repr . ' minutes'));
 
         // Guardar reprogramacion
         $stmt = $this->conn->prepare(
@@ -247,7 +259,7 @@ class Cita {
             $stmt2->close();
         }
 
-        return ['ok' => $ok, 'mensaje' => $ok ? 'Cita reprogramada. El cliente tiene 3 minutos para confirmar.' : 'Error al reprogramar.'];
+        return ['ok' => $ok, 'mensaje' => $ok ? "Cita reprogramada. El cliente tiene {$minutos_repr} minutos para confirmar." : 'Error al reprogramar.'];
     }
 
     /**
@@ -329,10 +341,6 @@ class Cita {
         return ['ok' => $ok];
     }
 
-    // ----------------------------------------------------------------
-    // ESTADISTICAS
-    // ----------------------------------------------------------------
-
     public function resumenHoyBarbero(int $id_barbero): array {
         $hoy = date('Y-m-d');
         $stmt = $this->conn->prepare(
@@ -404,13 +412,6 @@ class Cita {
         return $stmt->get_result()->fetch_assoc() ?: null;
     }
 
-    // ----------------------------------------------------------------
-    // HELPERS
-    // ----------------------------------------------------------------
-
-    /**
-     * Verifica si un horario esta ocupado para el barbero en esa fecha.
-     */
     public function horarioOcupado(int $id_barbero, string $fecha, string $hora, int $excluir_cita = 0): bool {
         $stmt = $this->conn->prepare(
             "SELECT id_cita FROM citas
@@ -428,24 +429,28 @@ class Cita {
     }
 
     /**
-     * Verifica si una fecha_creacion esta dentro de la ventana de 3 minutos.
+     * Verifica si una fecha_creacion esta dentro de la ventana de reprogramacion.
      * CRITICO: Esta validacion ocurre en BACKEND para evitar bypass del cliente.
      */
     public function dentroDeVentana(string $fecha_creacion): bool {
+        $minutos_repr = (int)($this->config['tiempo_reprogramacion_min'] ?? 10);
+        $segundos_repr = $minutos_repr * 60;
         $creacion = new DateTime($fecha_creacion);
         $ahora    = new DateTime();
         $segundos = $ahora->getTimestamp() - $creacion->getTimestamp();
-        return $segundos <= self::VENTANA_SEGUNDOS;
+        return $segundos <= $segundos_repr;
     }
 
     /**
      * Retorna los segundos restantes de la ventana (puede ser negativo si expiro).
      */
     public function segundosRestantes(string $fecha_creacion): int {
+        $minutos_repr = (int)($this->config['tiempo_reprogramacion_min'] ?? 10);
+        $segundos_repr = $minutos_repr * 60;
         $creacion = new DateTime($fecha_creacion);
         $ahora    = new DateTime();
         $transcurrido = $ahora->getTimestamp() - $creacion->getTimestamp();
-        return max(0, self::VENTANA_SEGUNDOS - $transcurrido);
+        return max(0, $segundos_repr - $transcurrido);
     }
 
     private function liberarDisponibilidad(int $id_barbero, string $fecha, string $hora): void {

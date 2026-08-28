@@ -77,7 +77,7 @@ class AdminDashboardController {
     public function getCitasRecientes(int $limit = 10): array {
         $stmt = $this->conn->prepare(
             "SELECT c.id_cita, c.fecha, c.hora, c.estado,
-                    uc.nombre AS cliente, ub.nombre AS barbero,
+                    uc.nombre AS cliente, uc.foto_perfil AS foto_cliente, ub.nombre AS barbero,
                     s.nombre  AS servicio, s.precio
             FROM citas c
             INNER JOIN usuarios uc ON c.id_cliente  = uc.id_usuario

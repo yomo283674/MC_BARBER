@@ -1,4 +1,11 @@
-<?php session_start();
+<?php 
+session_start();
+require_once __DIR__ . '/../../config/database.php';
+global $globalConfig;
+$nombre_negocio = $globalConfig['nombre_negocio'] ?? 'MC BARBER';
+$logo_url = $globalConfig['logo_url'] ?? 'public/img/logo_corona.jpg';
+$logo_src = str_starts_with($logo_url, 'http') ? $logo_url : '../../' . $logo_url;
+
 $swal = $_SESSION['swal'] ?? null;
 unset($_SESSION['swal']);
 ?>
@@ -44,10 +51,10 @@ unset($_SESSION['swal']);
                 <div class="register-form">
                     <div class="logo-container">
                         <div class="logo">
-                            <img src="../../public/img/logo_corona.jpg" alt="MC Barber Logo">
+                            <img src="<?= htmlspecialchars($logo_src) ?>" alt="<?= htmlspecialchars($nombre_negocio) ?>">
                         </div>
                         <span class="logo-name">
-                            BARBERÍA
+                            <?= htmlspecialchars($nombre_negocio) ?>
                         </span>
                         <small>
                             PREMIUM

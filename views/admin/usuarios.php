@@ -36,7 +36,7 @@ $base_path     = PROFUNDIDAD;
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Usuarios â€” Administrador | MC Barber</title>
+    <title>Usuarios Administrador | MC Barber</title>
     <meta name="description" content="Gestión de usuarios del sistema MC Barber">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
     <link rel="stylesheet" href="<?= PROFUNDIDAD ?>public/css/dashboard.css">

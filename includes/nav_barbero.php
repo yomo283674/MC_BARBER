@@ -12,6 +12,10 @@ $inicial        = strtoupper(mb_substr($nombre_usuario, 0, 1));
 $pagina_activa  = $pagina_activa ?? '';
 $titulo_pagina  = $titulo_pagina ?? 'Panel Barbero';
 $base_path      = $base_path     ?? '../../';
+global $globalConfig;
+$nombre_negocio = $globalConfig['nombre_negocio'] ?? 'MC BARBER';
+$logo_url = $globalConfig['logo_url'] ?? 'public/img/logo_corona.jpg';
+$logo_src = str_starts_with($logo_url, 'http') ? $logo_url : $base_path . $logo_url;
 ?>
 
 
@@ -21,9 +25,9 @@ $base_path      = $base_path     ?? '../../';
 <!-- SIDEBAR -->
 <aside class="sidebar" id="sidebar">
     <div class="sidebar-brand">
-        <img src="<?= $base_path ?>public/img/logo_corona.jpg" alt="MC Barber">
+        <img src="<?= htmlspecialchars($logo_src) ?>" alt="<?= htmlspecialchars($nombre_negocio) ?>">
         <div class="sidebar-brand-text">
-            <span class="sidebar-brand-name">MC BARBER</span>
+            <span class="sidebar-brand-name"><?= htmlspecialchars($nombre_negocio) ?></span>
             <span class="sidebar-brand-sub">Barbero</span>
         </div>
 

@@ -36,11 +36,11 @@ class ServiciosAdminController {
     }
 
     /** Crea un nuevo servicio */
-    public function crear(string $nombre, string $descripcion, float $precio, int $duracion, string $estado = 'ACTIVO'): array {
+    public function crear(string $nombre, string $descripcion, float $precio, int $duracion, ?string $imagen = null, string $estado = 'ACTIVO'): array {
         $stmt = $this->conn->prepare(
-            "INSERT INTO servicios (nombre, descripcion, precio, duracion_minutos, estado) VALUES (?, ?, ?, ?, ?)"
+            "INSERT INTO servicios (nombre, descripcion, precio, duracion_min, imagen, estado) VALUES (?, ?, ?, ?, ?, ?)"
         );
-        $stmt->bind_param('ssdis', $nombre, $descripcion, $precio, $duracion, $estado);
+        $stmt->bind_param('ssdiss', $nombre, $descripcion, $precio, $duracion, $imagen, $estado);
         $ok = $stmt->execute();
         $stmt->close();
 
@@ -51,20 +51,13 @@ class ServiciosAdminController {
     }
 
     /** Actualiza un servicio */
-    public function actualizar(int $id, string $nombre, string $descripcion, float $precio, int $duracion, string $estado): array {
+    public function actualizar(int $id, string $nombre, string $descripcion, float $precio, int $duracion, ?string $imagen = null, string $estado = 'ACTIVO'): array {
         $stmt = $this->conn->prepare(
-            "UPDATE servicios SET nombre = ?, descripcion = ?, precio = ?, duracion_minutos = ?, estado = ? WHERE id_servicio = ?"
+            "UPDATE servicios SET nombre = ?, descripcion = ?, precio = ?, duracion_min = ?, imagen = ?, estado = ? WHERE id_servicio = ?"
         );
-        $stmt->bind_param('ssdisd', $nombre, $descripcion, $precio, $duracion, $estado, $id);
-
-        // Fix: usar bind correcto
+        $stmt->bind_param('ssdissi', $nombre, $descripcion, $precio, $duracion, $imagen, $estado, $id);
+        $ok = $stmt->execute();
         $stmt->close();
-        $stmt2 = $this->conn->prepare(
-            "UPDATE servicios SET nombre = ?, descripcion = ?, precio = ?, duracion_minutos = ?, estado = ? WHERE id_servicio = ?"
-        );
-        $stmt2->bind_param('ssdisi', $nombre, $descripcion, $precio, $duracion, $estado, $id);
-        $ok = $stmt2->execute();
-        $stmt2->close();
 
         if ($ok) {
             registrarAuditoria($this->conn, $_SESSION['usuario_id'], "EDITAR_SERVICIO: ID=$id $nombre", "EXITOSO");

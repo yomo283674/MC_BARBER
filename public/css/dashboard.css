@@ -57,7 +57,11 @@ body.dashboard-body {
     position: fixed;
     top: 0; left: 0; bottom: 0;
     z-index: 1000;
-    transition: width var(--transition), transform var(--transition);
+    transition: width var(--transition), transform var(--transition), box-shadow var(--transition);
+}
+
+.sidebar:hover, .sidebar.force-open {
+    box-shadow: 4px 0 30px rgba(0, 0, 0, 0.2);
 }
 
 .sidebar-brand {

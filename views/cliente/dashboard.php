@@ -36,7 +36,7 @@ $titulo_pagina = 'Mi Dashboard';
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MC BARBER</title>
+    <title><?= htmlspecialchars($globalConfig['nombre_negocio'] ?? 'MC BARBER') ?></title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
     <link rel="stylesheet" href="../../public/css/dashboard.css">
     <link rel="stylesheet" href="../../public/css/components.css">

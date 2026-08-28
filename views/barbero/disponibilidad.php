@@ -13,6 +13,11 @@ require_once $base_path . 'models/Disponibilidad.php';
 $id_barbero = (int)$_SESSION['usuario_id'];
 $dispModel  = new Disponibilidad();
 
+global $globalConfig;
+$horario_apertura = substr($globalConfig['horario_apertura'] ?? '09:00', 0, 5);
+$horario_cierre   = substr($globalConfig['horario_cierre'] ?? '20:00', 0, 5);
+$duracion_cita    = $globalConfig['duracion_cita_min'] ?? 60;
+
 // Semana a mostrar (por defecto, semana actual)
 $semana_ini = $_GET['semana'] ?? date('Y-m-d', strtotime('monday this week'));
 $semana_ini = date('Y-m-d', strtotime($semana_ini)); // normalizar a lunes
@@ -292,24 +297,25 @@ $diasNombres   = ['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'];
                         <label class="form-label">Hora apertura</label>
                         <div class="input-icon">
                             <i class="bi bi-clock"></i>
-                            <input type="text" name="hora_apertura" class="form-control with-icon time-picker" value="09:00" placeholder="09:00 AM" required>
+                            <input type="text" name="hora_apertura" class="form-control with-icon time-picker" value="<?= htmlspecialchars($horario_apertura) ?>" placeholder="09:00" required>
                         </div>
                     </div>
                     <div class="form-group">
                         <label class="form-label">Hora cierre</label>
                         <div class="input-icon">
                             <i class="bi bi-clock"></i>
-                            <input type="text" name="hora_cierre" class="form-control with-icon time-picker" value="20:00" placeholder="08:00 PM" required>
+                            <input type="text" name="hora_cierre" class="form-control with-icon time-picker" value="<?= htmlspecialchars($horario_cierre) ?>" placeholder="20:00" required>
                         </div>
                     </div>
                 </div>
                 <div class="form-group">
                     <label class="form-label">Duración por turno (minutos)</label>
                     <select name="duracion_min" class="form-control">
-                        <option value="30">30 min</option>
-                        <option value="45">45 min</option>
-                        <option value="60" selected>60 min</option>
-                        <option value="90">90 min</option>
+                        <option value="15" <?= $duracion_cita == 15 ? 'selected' : '' ?>>15 min</option>
+                        <option value="30" <?= $duracion_cita == 30 ? 'selected' : '' ?>>30 min</option>
+                        <option value="45" <?= $duracion_cita == 45 ? 'selected' : '' ?>>45 min</option>
+                        <option value="60" <?= $duracion_cita == 60 ? 'selected' : '' ?>>60 min</option>
+                        <option value="90" <?= $duracion_cita == 90 ? 'selected' : '' ?>>90 min</option>
                     </select>
                 </div>
             </form>

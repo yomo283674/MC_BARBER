@@ -9,9 +9,14 @@
  */
 $nombre_usuario = $_SESSION['usuario_nombre'] ?? 'Admin';
 $inicial        = strtoupper(mb_substr($nombre_usuario, 0, 1));
+$foto_usuario   = $_SESSION['usuario_foto'] ?? null;
 $pagina_activa  = $pagina_activa ?? '';
 $titulo_pagina  = $titulo_pagina ?? 'Panel Administrador';
 $base_path      = $base_path     ?? '../../';
+global $globalConfig;
+$nombre_negocio = $globalConfig['nombre_negocio'] ?? 'MC BARBER';
+$logo_url = $globalConfig['logo_url'] ?? 'public/img/logo_corona.jpg';
+$logo_src = str_starts_with($logo_url, 'http') ? $logo_url : $base_path . $logo_url;
 ?>
 
 
@@ -21,9 +26,9 @@ $base_path      = $base_path     ?? '../../';
 <!-- SIDEBAR -->
 <aside class="sidebar" id="sidebar">
     <div class="sidebar-brand">
-        <img src="<?= $base_path ?>public/img/logo_corona.jpg" alt="MC Barber">
+        <img src="<?= htmlspecialchars($logo_src) ?>" alt="<?= htmlspecialchars($nombre_negocio) ?>">
         <div class="sidebar-brand-text">
-            <span class="sidebar-brand-name">MC BARBER</span>
+            <span class="sidebar-brand-name"><?= htmlspecialchars($nombre_negocio) ?></span>
             <span class="sidebar-brand-sub">Administrador</span>
         </div>
 
@@ -37,13 +42,13 @@ $base_path      = $base_path     ?? '../../';
         </a>
 
         <span class="nav-section-label">Gestión</span>
-        <a href="<?= $base_path ?>views/admin/barberos.php"
-        class="nav-item <?= $pagina_activa === 'barberos' ? 'active' : '' ?>">
-            <i class="bi bi-scissors"></i><span>Barberos</span>
-        </a>
         <a href="<?= $base_path ?>views/admin/usuarios.php"
         class="nav-item <?= $pagina_activa === 'usuarios' ? 'active' : '' ?>">
             <i class="bi bi-people-fill"></i><span>Usuarios</span>
+        </a>
+        <a href="<?= $base_path ?>views/admin/barberos.php"
+        class="nav-item <?= $pagina_activa === 'barberos' ? 'active' : '' ?>">
+            <i class="bi bi-scissors"></i><span>Barberos</span>
         </a>
         <a href="<?= $base_path ?>views/admin/citas.php"
         class="nav-item <?= $pagina_activa === 'citas' ? 'active' : '' ?>">
@@ -82,7 +87,11 @@ $base_path      = $base_path     ?? '../../';
 
     <div class="sidebar-footer">
         <div class="sidebar-user">
-            <div class="sidebar-avatar"><?= htmlspecialchars($inicial) ?></div>
+            <?php if ($foto_usuario): ?>
+                <div class="sidebar-avatar" style="background-image: url('<?= $base_path ?>public/uploads/perfiles/<?= htmlspecialchars($foto_usuario) ?>'); background-size: cover; background-position: center;"></div>
+            <?php else: ?>
+                <div class="sidebar-avatar"><?= htmlspecialchars($inicial) ?></div>
+            <?php endif; ?>
             <div class="sidebar-user-info">
                 <div class="sidebar-user-name"><?= htmlspecialchars($nombre_usuario) ?></div>
                 <div class="sidebar-user-role">Administrador</div>
@@ -164,6 +173,54 @@ document.addEventListener("DOMContentLoaded", function() {
     });
 });
 </script>
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const currentPath = window.location.pathname.toLowerCase();
+        const navItems = document.querySelectorAll('.sidebar-nav .nav-item');
+        let matched = false;
+        
+        navItems.forEach(item => {
+            const href = item.getAttribute('href');
+            if (href) {
+                const hrefPath = href.split('?')[0].toLowerCase();
+                const basename = hrefPath.substring(hrefPath.lastIndexOf('/') + 1);
+                
+                if (basename && currentPath.endsWith(basename)) {
+                    item.classList.add('active');
+                    matched = true;
+                } else {
+                    item.classList.remove('active');
+                }
+            }
+        });
+        
+        // Fallback for $pagina_activa if JS doesn't match
+        if (!matched && '<?= $pagina_activa ?>' !== '') {
+            const fallbackMap = {
+                'dashboard': 'dashboard.php',
+                'usuarios': 'usuarios.php',
+                'barberos': 'barberos.php',
+                'citas': 'citas.php',
+                'servicios': 'servicios.php',
+                'reportes': 'reportes.php',
+                'auditoria': 'auditoria.php',
+                'configuracion': 'configuracion.php',
+                'perfil': 'perfil.php'
+            };
+            const fallbackFile = fallbackMap['<?= $pagina_activa ?>'];
+            if (fallbackFile) {
+                navItems.forEach(item => {
+                    const href = item.getAttribute('href') || '';
+                    if (href.includes(fallbackFile)) {
+                        item.classList.add('active');
+                    }
+                });
+            }
+        }
+    });
+    </script>
+</aside>
+
 <!-- MAIN CONTENT WRAPPER -->
 <div class="main-content">
     <!-- TOPBAR -->

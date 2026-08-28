@@ -7,28 +7,56 @@ define('PROFUNDIDAD', '../../');
 require_once PROFUNDIDAD . 'includes/auth_guard.php';
 require_once PROFUNDIDAD . 'includes/session_timeout.php';
 verificarRol(['ADMINISTRADOR']);
-require_once PROFUNDIDAD . 'controllers/barbero/serviciosController.php';
+require_once PROFUNDIDAD . 'controllers/admin/serviciosAdminController.php';
 global $conn;
 
 $flash = null;
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $ctrl   = new Servicios($conn);
+    $ctrl   = new ServiciosAdminController($conn);
     $accion = $_POST['accion'] ?? '';
 
     if ($accion === 'crear') {
+        $imagenPath = null;
+        if (isset($_FILES['imagen']) && $_FILES['imagen']['error'] === UPLOAD_ERR_OK) {
+            $ext = strtolower(pathinfo($_FILES['imagen']['name'], PATHINFO_EXTENSION));
+            if (in_array($ext, ['jpg', 'jpeg', 'png', 'webp'])) {
+                $filename = 'srv_' . time() . '.' . $ext;
+                $dest = PROFUNDIDAD . 'public/uploads/servicios/' . $filename;
+                if (!is_dir(PROFUNDIDAD . 'public/uploads/servicios/')) mkdir(PROFUNDIDAD . 'public/uploads/servicios/', 0777, true);
+                if (move_uploaded_file($_FILES['imagen']['tmp_name'], $dest)) {
+                    $imagenPath = $filename;
+                }
+            }
+        }
+
         $flash = $ctrl->crear(
             trim($_POST['nombre']      ?? ''),
             trim($_POST['descripcion'] ?? ''),
             (float)($_POST['precio']   ?? 0),
-            (int)($_POST['duracion']   ?? 30)
+            (int)($_POST['duracion']   ?? 30),
+            $imagenPath
         );
     } elseif ($accion === 'editar') {
+        $imagenPath = trim($_POST['imagen_actual'] ?? '');
+        if (isset($_FILES['imagen']) && $_FILES['imagen']['error'] === UPLOAD_ERR_OK) {
+            $ext = strtolower(pathinfo($_FILES['imagen']['name'], PATHINFO_EXTENSION));
+            if (in_array($ext, ['jpg', 'jpeg', 'png', 'webp'])) {
+                $filename = 'srv_' . time() . '.' . $ext;
+                $dest = PROFUNDIDAD . 'public/uploads/servicios/' . $filename;
+                if (!is_dir(PROFUNDIDAD . 'public/uploads/servicios/')) mkdir(PROFUNDIDAD . 'public/uploads/servicios/', 0777, true);
+                if (move_uploaded_file($_FILES['imagen']['tmp_name'], $dest)) {
+                    $imagenPath = $filename;
+                }
+            }
+        }
+
         $flash = $ctrl->actualizar(
             (int)$_POST['id'],
             trim($_POST['nombre']      ?? ''),
             trim($_POST['descripcion'] ?? ''),
             (float)($_POST['precio']   ?? 0),
             (int)($_POST['duracion']   ?? 30),
+            $imagenPath,
             trim($_POST['estado']      ?? 'ACTIVO')
         );
     } elseif ($accion === 'desactivar') {
@@ -36,7 +64,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-$ctrl     = new Servicios($conn);
+$ctrl     = new ServiciosAdminController($conn);
 $servicios= $ctrl->listar();
 
 $pagina_activa = 'servicios';
@@ -170,8 +198,10 @@ $base_path     = PROFUNDIDAD;
         <div class="services-grid">
             <?php foreach ($servicios as $sv): ?>
             <div class="service-card" style="<?= $sv['estado'] === 'INACTIVO' ? 'opacity:.65' : '' ?>">
-                <div class="service-icon">
-                    <i class="bi bi-scissors"></i>
+                <div class="service-icon" style="<?= !empty($sv['imagen']) ? 'background: url(' . $base_path . 'public/uploads/servicios/' . htmlspecialchars($sv['imagen']) . ') center/cover no-repeat;' : '' ?>">
+                    <?php if (empty($sv['imagen'])): ?>
+                        <i class="bi bi-scissors"></i>
+                    <?php endif; ?>
                 </div>
                 <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:6px">
                     <div style="font-weight:700; font-size:15px"><?= htmlspecialchars($sv['nombre']) ?></div>
@@ -214,7 +244,7 @@ $base_path     = PROFUNDIDAD;
             <h4 class="modal-title"><i class="bi bi-plus-circle me-2"></i>Nuevo Servicio</h4>
             <button class="modal-close" onclick="cerrarModales()">&times;</button>
         </div>
-        <form method="POST">
+        <form method="POST" enctype="multipart/form-data">
             <input type="hidden" name="accion" value="crear">
             <div class="content-card-body">
                 <div class="form-group">
@@ -223,7 +253,11 @@ $base_path     = PROFUNDIDAD;
                 </div>
                 <div class="form-group">
                     <label class="form-label">Descripción</label>
-                    <textarea name="descripcion" class="form-control" rows="3" placeholder="Descripción del servicioâ€¦"></textarea>
+                    <textarea name="descripcion" class="form-control" rows="3" placeholder="Descripción del servicio…"></textarea>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Imagen</label>
+                    <input type="file" name="imagen" class="form-control" accept="image/*">
                 </div>
                 <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
                     <div class="form-group">
@@ -251,9 +285,10 @@ $base_path     = PROFUNDIDAD;
             <h4 class="modal-title"><i class="bi bi-pencil me-2"></i>Editar Servicio</h4>
             <button class="modal-close" onclick="cerrarModales()">&times;</button>
         </div>
-        <form method="POST">
+        <form method="POST" enctype="multipart/form-data">
             <input type="hidden" name="accion" value="editar">
             <input type="hidden" name="id" id="editId">
+            <input type="hidden" name="imagen_actual" id="editImagenActual">
             <div class="content-card-body">
                 <div class="form-group">
                     <label class="form-label">Nombre *</label>
@@ -262,6 +297,11 @@ $base_path     = PROFUNDIDAD;
                 <div class="form-group">
                     <label class="form-label">Descripción</label>
                     <textarea name="descripcion" id="editDesc" class="form-control" rows="3"></textarea>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Imagen</label>
+                    <input type="file" name="imagen" class="form-control" accept="image/*">
+                    <small style="color: #6b7280; font-size: 12px; margin-top: 4px; display: block;">Deja vacío para conservar la imagen actual.</small>
                 </div>
                 <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
                     <div class="form-group">
@@ -314,6 +354,7 @@ function abrirEditar(sv) {
     document.getElementById('editPrecio').value  = sv.precio;
     document.getElementById('editDuracion').value= sv.duracion_minutos;
     document.getElementById('editEstado').value  = sv.estado;
+    document.getElementById('editImagenActual').value = sv.imagen || '';
     document.getElementById('modalEditar').classList.add('open');
 }
 function desactivar(id, nombre) {
@@ -322,9 +363,15 @@ function desactivar(id, nombre) {
         text: `"${nombre}" no estará disponible para nuevas citas.`,
         icon: 'warning',
         showCancelButton: true,
-        confirmButtonColor: '#dc2626',
+        buttonsStyling: false,
         cancelButtonText: 'Cancelar',
-        confirmButtonText: 'Sí, desactivar'
+        confirmButtonText: 'Sí, desactivar',
+        customClass: {
+            popup: 'swal-ultra-modern',
+            confirmButton: 'swal-btn swal-btn-danger',
+            cancelButton: 'swal-btn swal-btn-secondary',
+            actions: 'swal-actions-right'
+        }
     }).then(r => {
         if (r.isConfirmed) {
             document.getElementById('desactivarId').value = id;
@@ -340,12 +387,25 @@ Swal.fire({
     icon: '<?= $flash['ok'] ? 'success' : 'error' ?>',
     title: '<?= $flash['ok'] ? '¡Listo!' : 'Error' ?>',
     text: '<?= addslashes($flash['msg']) ?>',
-    confirmButtonColor: '#b58a4a'
+    buttonsStyling: false,
+    customClass: {
+        popup: 'swal-ultra-modern',
+        confirmButton: 'swal-btn swal-btn-primary'
+    }
 });
 <?php endif; ?>
 const p = new URLSearchParams(window.location.search);
 if (p.get('expired') === '1') {
-    Swal.fire({ icon:'warning', title:'Sesión expirada', text:'Tu sesión cerró por inactividad.', confirmButtonColor:'#b58a4a' });
+    Swal.fire({ 
+        icon:'warning', 
+        title:'Sesión expirada', 
+        text:'Tu sesión cerró por inactividad.', 
+        buttonsStyling: false,
+        customClass: {
+            popup: 'swal-ultra-modern',
+            confirmButton: 'swal-btn swal-btn-primary'
+        }
+    });
 }
 </script>
 </body>

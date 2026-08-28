@@ -40,7 +40,7 @@ $titulo_pagina = 'Servicios';
         
         <?php if (!empty($s['imagen'])): ?>
             <div style="position: relative; height: 200px; overflow: hidden; background: #000;">
-                <div style="position: absolute; inset: 0; background-image: url('../../public/uploads/servicios/<?= htmlspecialchars($s['imagen']) ?>'); background-size: cover; background-position: center; transition: transform 0.5s ease-out; opacity: 0.9;" onmouseover="this.style.transform='scale(1.08)'" onmouseout="this.style.transform='scale(1)'"></div>
+                <div style="position: absolute; inset: 0; background-image: url('<?= PROFUNDIDAD . 'public/uploads/servicios/' . htmlspecialchars($s['imagen']) ?>'); background-size: cover; background-position: center; transition: transform 0.5s ease-out; opacity: 0.9;" onmouseover="this.style.transform='scale(1.08)'" onmouseout="this.style.transform='scale(1)'"></div>
                 <!-- Gradient overlay to blend image with dark card smoothly -->
                 <div style="position: absolute; inset: 0; background: linear-gradient(to top, #1f2937 0%, transparent 60%); pointer-events: none;"></div>
             </div>
