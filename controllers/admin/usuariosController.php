@@ -17,7 +17,7 @@ class UsuariosController {
     /** Lista todos los usuarios (clientes y barberos) con filtros opcionales */
     public function listar(string $rol = '', string $estado = '', string $buscar = ''): array {
         $sql = "SELECT u.id_usuario, u.nombre, u.email, u.telefono, u.estado,
-                       u.fecha_registro, u.ultimo_acceso, r.nombre AS rol, r.id_rol
+                    u.fecha_registro, u.ultimo_acceso, r.nombre AS rol, r.id_rol
                 FROM usuarios u
                 INNER JOIN roles r ON u.id_rol = r.id_rol
                 WHERE u.id_rol IN (2, 3)";

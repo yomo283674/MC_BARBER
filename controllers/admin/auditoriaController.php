@@ -57,11 +57,11 @@ class AuditoriaController {
     public function getStats(): array {
         $stmt = $this->conn->prepare(
             "SELECT a.resultado, COUNT(*) AS total 
-             FROM auditoria a
-             INNER JOIN usuarios u ON a.id_usuario = u.id_usuario
-             INNER JOIN roles    r ON u.id_rol     = r.id_rol
-             WHERE r.nombre = 'BARBERO'
-             GROUP BY a.resultado"
+            FROM auditoria a
+            INNER JOIN usuarios u ON a.id_usuario = u.id_usuario
+            INNER JOIN roles    r ON u.id_rol     = r.id_rol
+            WHERE r.nombre = 'BARBERO'
+            GROUP BY a.resultado"
         );
         $stmt->execute();
         $rows = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
