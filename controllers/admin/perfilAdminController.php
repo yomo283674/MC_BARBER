@@ -18,7 +18,7 @@ class PerfilAdminController {
     public function obtener(int $id): ?array {
         $stmt = $this->conn->prepare(
             "SELECT u.id_usuario, u.nombre, u.email, u.telefono, u.estado, u.fecha_registro, u.ultimo_acceso, u.foto_perfil
-             FROM usuarios u WHERE u.id_usuario = ? LIMIT 1"
+            FROM usuarios u WHERE u.id_usuario = ? LIMIT 1"
         );
         $stmt->bind_param('i', $id);
         $stmt->execute();

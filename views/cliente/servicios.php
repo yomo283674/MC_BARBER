@@ -35,8 +35,8 @@ $titulo_pagina = 'Servicios';
     <?php else: ?>
     <?php foreach ($servicios as $s): ?>
     <div style="background: linear-gradient(145deg, #1f2937, #111827); border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); border: 1px solid rgba(212,175,55,0.15); overflow: hidden; display: flex; flex-direction: column; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); position: relative;" 
-         onmouseover="this.style.transform='translateY(-6px)'; this.style.boxShadow='0 20px 40px rgba(0,0,0,0.2)'; this.style.borderColor='rgba(212,175,55,0.4)';" 
-         onmouseout="this.style.transform=''; this.style.boxShadow='0 10px 25px rgba(0,0,0,0.1)'; this.style.borderColor='rgba(212,175,55,0.15)';">
+        onmouseover="this.style.transform='translateY(-6px)'; this.style.boxShadow='0 20px 40px rgba(0,0,0,0.2)'; this.style.borderColor='rgba(212,175,55,0.4)';" 
+        onmouseout="this.style.transform=''; this.style.boxShadow='0 10px 25px rgba(0,0,0,0.1)'; this.style.borderColor='rgba(212,175,55,0.15)';">
         
         <?php if (!empty($s['imagen'])): ?>
             <div style="position: relative; height: 200px; overflow: hidden; background: #000;">
