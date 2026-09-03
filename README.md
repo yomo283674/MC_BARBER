@@ -1,6 +1,6 @@
 <div align="center">
   <img src="public/img/logo_corona.jpg" alt="MC Barber Logo" width="150" />
-  <h1>✂️ MC BARBER</h1>
+  <h1>MC BARBER</h1>
   <p><strong>Barbería Premium - Sistema de Gestión Integral</strong></p>
   
   <p>
